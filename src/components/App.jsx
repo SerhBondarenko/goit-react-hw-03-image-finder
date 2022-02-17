@@ -6,6 +6,8 @@ import ImageGallery from './ImageGallery/ImageGallery';
 import imageFinderAPI from './servises/image-finder-api';
 import Button from './Button/Button';
 import Loader from './Loader/Loader';
+import Modal from './Modal/Modal';
+
 
 export default class App extends Component {
   state = {
@@ -16,6 +18,7 @@ export default class App extends Component {
     error: null,
     status: 'idle',
     page: 1,
+    largeImageURL: {},
   };
 
   fetchQuery = () => {
@@ -27,12 +30,14 @@ export default class App extends Component {
           images: [...prevState.images, ...data.hits],
           page: prevState.page + 1,
           status: 'resolved',
+          data,
         }))
       }).catch(error => this.setState({ error, status: 'rejected' }))
   };
   
-
- componentDidUpdate(prevProps, prevState) {
+ 
+  componentDidUpdate(prevProps, prevState) {
+  
    if (prevState.imageName !== this.state.imageName) {
    this.setState({ images: [] });
      this.fetchQuery(this.state.imageName, this.state.page)
@@ -43,9 +48,14 @@ export default class App extends Component {
   handleFormSubmit = imageName => {
     this.setState({ imageName,page:1  });
   };
-
+   openModal = (imageUrl) => {
+    this.setState({ showModal: true, largeImageURL: imageUrl});
+  };
+ closeModal = () => {
+    this.setState({ showModal: false, activeImgUrl: "" });
+  };
   render() {
-    const { images,status, error} = this.state;
+    const { images, status, error, data,showModal,largeImageURL} = this.state;
     return (
       
       <div className='App'><Searchbar onSubmit={this.handleFormSubmit} />
@@ -53,8 +63,11 @@ export default class App extends Component {
         {status === 'idle' && <h2 className='title'>Введите имя запроса</h2>}
         {status === 'pending' && <Loader />}
         {status === 'rejected' && <h1>{error.message}</h1>}
-        {status === 'resolved' && <main> <ImageGallery images={images} /> <div className='LoadMoreBtn'><Button onClickBtn={this.fetchQuery} /> </div> </main>}
-  
+        {status === 'resolved' && <main> <ImageGallery images={images} toggleModal={this.openModal} showModal={showModal }/> {images.length !== data.totalHits && <div className='LoadMoreBtn'><Button onClickBtn={this.fetchQuery} /> </div>}</main>}
+     {showModal && (
+          <Modal onClose={this.closeModal}>
+           <img src={largeImageURL} alt="images"></img>;</Modal>
+      )}
     </div>)
   };
 };
